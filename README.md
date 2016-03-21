@@ -4,14 +4,19 @@ Current setup includes:
 * nginx container used as reverse proxy
 * mongo container
 * redis container
+* rabbitmq container  
+* worker container
 
 ### Get Started
 For OS X install Docker Toolbox  
-https://www.docker.com/products/docker-toolbox
+https://www.docker.com/products/docker-toolbox  
+
+RabbitMQ management site can be found from <host-ip>:8080
 
 ##### Common Commands
 docker-compose build  
-docker-compose up
+docker-compose up  
+docker-compose up --force-recreate
 
 docker rm `docker ps -qa`  
 docker rm --force `docker ps -qa`  

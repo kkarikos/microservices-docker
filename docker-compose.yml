@@ -53,3 +53,11 @@ services:
       context: ./worker
     depends_on:
       - rabbitmq
+  payments:
+    container_name: stripe
+    build:
+      context: ./payments
+    depends_on:
+      - rabbitmq
+    environment:
+      STRIPE_API_KEY: sk_test_BQokikJOvBiI2HlWgH4olfQ2

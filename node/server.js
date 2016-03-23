@@ -15,7 +15,8 @@ let channel;
 
 var connect = () => {
   return Rabbitmq.connect(RABBIT_URL).then((conn) => {
-    conn.createChannel().then((ch) => {
+    conn.createConfirmChannel().then((ch) => {
+      ch.assertQueue(q);
       channel = ch;
     });
   }).catch(() => {
@@ -42,8 +43,10 @@ app.get('/docs', function (req, res) {
 });
 
 app.get('/job', function (req, res) {
-  channel.assertQueue(q);
-  channel.sendToQueue(q, new Buffer('something to do'));
+  channel.sendToQueue(q, new Buffer('something to do'), {}, function(err, ok) {
+    // TODO: signal client
+    if (!err) console.log('NODE:%s: message process succesfully by the worker', process.env.NODE_ID);
+  });
   res.status(202).send('Job accepted: ' + Date.now());
 });
 

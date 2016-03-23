@@ -11,6 +11,19 @@ const RedisClient = redis.createClient('6379', 'redis');
 const Rabbitmq = require('amqplib');
 
 const app = express();
+let channel;
+
+var connect = () => {
+  return Rabbitmq.connect(RABBIT_URL).then((conn) => {
+    conn.createChannel().then((ch) => {
+      channel = ch;
+    });
+  }).catch(() => {
+    setTimeout(connect, 1000);
+  });
+};
+
+connect().then(() => console.log('%s connected to rabbit', process.env.NODE_ID));
 
 app.get('/', function (req, res) {
   RedisClient.incr('counter', (err, counter) => {
@@ -29,13 +42,9 @@ app.get('/docs', function (req, res) {
 });
 
 app.get('/job', function (req, res) {
-  Rabbitmq.connect(RABBIT_URL).then((conn) => {
-    return conn.createChannel().then((ch) => {
-      ch.assertQueue(q);
-      ch.sendToQueue(q, new Buffer('something to do'));
-      res.status(202).send('Job accepted: ' + Date.now());
-    });
-  }).then(null, console.warn);
+  channel.assertQueue(q);
+  channel.sendToQueue(q, new Buffer('something to do'));
+  res.status(202).send('Job accepted: ' + Date.now());
 });
 
 app.listen(PORT);

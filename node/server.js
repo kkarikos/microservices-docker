@@ -16,12 +16,16 @@ var bodyParser = require('body-parser');
 app.use(bodyParser.json());
 
 let channel;
+let replyQueue;
 
 // TODO: create exchanges. eg. payments exchange
 var connect = () => {
   return Rabbitmq.connect(RABBIT_URL).then((conn) => {
     conn.createConfirmChannel().then((ch) => {
       channel = ch;
+      channel.assertQueue('', {exclusive: true}).then((done) => {
+        replyQueue = done.queue;
+      });
     });
   }).catch(() => {
     setTimeout(connect, 1000);
@@ -29,6 +33,12 @@ var connect = () => {
 };
 
 connect().then(() => console.log('%s connected to rabbit', process.env.NODE_ID));
+
+function generateUuid() {
+  return Math.random().toString() +
+         Math.random().toString() +
+         Math.random().toString();
+}
 
 app.get('/', function (req, res) {
   RedisClient.incr('counter', (err, counter) => {
@@ -50,10 +60,21 @@ app.get('/job', function (req, res) {
   // TODO: publish instead of sendToQueue, which will also accept callback function
   // TODO: assertExchange
   channel.assertQueue(JOBS_QUEUE);
-  channel.sendToQueue(JOBS_QUEUE, new Buffer('something to do'), {}, function(err, ok) {
-    // TODO: signal client
-    if (!err) console.log('NODE:%s: message process succesfully by the worker', process.env.NODE_ID);
-  });
+  // TODO: do bind for exchange/queue
+  channel.consume(replyQueue, function(msg) {
+    // TODO: use socket.io to push message to client
+    console.log('reply from worker: %s', msg.content);
+  }, {noAck: true});
+
+  channel.sendToQueue(
+    JOBS_QUEUE,
+    new Buffer('something to do'),
+    { correlationId: generateUuid(), replyTo: replyQueue},
+    function(err, ok) {
+      if (!err) console.log('NODE:%s: ack callback received', process.env.NODE_ID);
+    }
+  );
+
   res.status(202).send('Job accepted: ' + Date.now());
 });
 
@@ -64,8 +85,14 @@ app.post('/payments/charge', (req, res) => {
     currency: req.body.currency,
     description: req.body.description
   };
+
   channel.assertQueue(PAYMENTS_QUEUE);
-  channel.sendToQueue(PAYMENTS_QUEUE, new Buffer(JSON.stringify(payload)));
+
+  channel.sendToQueue(
+    PAYMENTS_QUEUE,
+    new Buffer(JSON.stringify(payload))
+  );
+
   res.status(202).send('payment in process: ' + Date.now());
 });
 

@@ -23,6 +23,11 @@ function startChannel(connection) {
     ch.consume(q, (msg) => {
       if (msg !== null) {
         console.log(msg.content.toString());
+        ch.sendToQueue(
+          msg.properties.replyTo,
+          new Buffer('jippii'),
+          {correlationId: msg.properties.correlationId}
+        );
         ch.ack(msg);
       }
     });

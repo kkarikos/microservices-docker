@@ -8,8 +8,10 @@
   "dependencies": {
     "amqplib": "^0.4.1",
     "body-parser": "^1.15.0",
+    "cors": "^2.7.1",
     "express": "^4.13.3",
     "mongodb": "^2.1.7",
-    "redis": "^2.5.2"
+    "redis": "^2.5.2",
+    "socket.io": "^1.4.5"
   }
 }

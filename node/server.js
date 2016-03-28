@@ -7,38 +7,48 @@ const PORT = 3000;
 const JOBS_QUEUE = 'jobs';
 const PAYMENTS_QUEUE = 'payments';
 const MongoClient = require('mongodb').MongoClient;
-// using host entries created by docker in /etc/hosts
 const RedisClient = redis.createClient('6379', 'redis');
 const Rabbitmq = require('amqplib');
+const cors = require('cors');
+const bodyParser = require('body-parser');
 
 var app = express();
-var bodyParser = require('body-parser');
+app.use(cors());
 app.use(bodyParser.json());
+var server = require('http').Server(app);
+var io = require('socket.io')(server);
+io.set('origins', '*:*');
+io.set('transports', [ 'websocket', 'xhr-polling', 'jsonp-polling']);
+
+server.listen(PORT);
+io.on('connection', function(socket){
+  // TODO: use rooms for communicating clients
+  console.log('a user connected');
+});
 
 let channel;
 let replyQueue;
+let rabbitConnection;
 
 // TODO: create exchanges. eg. payments exchange
 var connect = () => {
   return Rabbitmq.connect(RABBIT_URL).then((conn) => {
-    conn.createConfirmChannel().then((ch) => {
+    rabbitConnection = conn;
+    conn.createConfirmChannel()
+    .then((ch) => {
       channel = ch;
-      channel.assertQueue('', {exclusive: true}).then((done) => {
-        replyQueue = done.queue;
-      });
-    });
+      // create reply queue per client
+      return channel.assertQueue('', {exclusive: true});
+    })
+    .then((done) => {
+      replyQueue = done.queue;
+    })
   }).catch(() => {
     setTimeout(connect, 1000);
   });
 };
 
 connect().then(() => console.log('%s connected to rabbit', process.env.NODE_ID));
-
-function generateUuid() {
-  return Math.random().toString() +
-         Math.random().toString() +
-         Math.random().toString();
-}
 
 app.get('/', function (req, res) {
   RedisClient.incr('counter', (err, counter) => {
@@ -59,21 +69,28 @@ app.get('/docs', function (req, res) {
 app.get('/job', function (req, res) {
   // TODO: publish instead of sendToQueue, which will also accept callback function
   // TODO: assertExchange
-  channel.assertQueue(JOBS_QUEUE);
-  // TODO: do bind for exchange/queue
-  channel.consume(replyQueue, function(msg) {
-    // TODO: use socket.io to push message to client
-    console.log('reply from worker: %s', msg.content);
-  }, {noAck: true});
+  // TODO: close channel
+  rabbitConnection.createChannel().then((ch) => {
+    ch.assertQueue(JOBS_QUEUE).then((done) => {
+      const corrId = generateUuid();
+      ch.consume(replyQueue, (msg) => {
+        console.log('reply from worker: %s', msg.content);
+        // TODO: emit to single client using rooms
+        // TODO: check correlationId
+        io.sockets.emit('news', { hello: 'world' });
+      }, {noAck: true});
 
-  channel.sendToQueue(
-    JOBS_QUEUE,
-    new Buffer('something to do'),
-    { correlationId: generateUuid(), replyTo: replyQueue},
-    function(err, ok) {
-      if (!err) console.log('NODE:%s: ack callback received', process.env.NODE_ID);
-    }
-  );
+      // TODO: do bind for exchange/queue
+      // TODO: use done.queue
+      ch.sendToQueue(
+        JOBS_QUEUE,
+        new Buffer('something to do'), { correlationId: corrId, replyTo: replyQueue },
+        function(err, ok) {
+          if (!err) console.log('NODE:%s: ack callback received', process.env.NODE_ID);
+        }
+      );
+    })
+  });
 
   res.status(202).send('Job accepted: ' + Date.now());
 });
@@ -87,7 +104,6 @@ app.post('/payments/charge', (req, res) => {
   };
 
   channel.assertQueue(PAYMENTS_QUEUE);
-
   channel.sendToQueue(
     PAYMENTS_QUEUE,
     new Buffer(JSON.stringify(payload))
@@ -96,5 +112,10 @@ app.post('/payments/charge', (req, res) => {
   res.status(202).send('payment in process: ' + Date.now());
 });
 
-app.listen(PORT);
+function generateUuid() {
+  return Math.random().toString() +
+         Math.random().toString() +
+         Math.random().toString();
+}
+
 console.log('Running on http://localhost:' + PORT);

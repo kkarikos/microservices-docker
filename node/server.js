@@ -67,32 +67,29 @@ app.get('/docs', function (req, res) {
 });
 
 app.get('/job', function (req, res) {
-  // TODO: publish instead of sendToQueue, which will also accept callback function
-  // TODO: assertExchange
-  // TODO: close channel
   rabbitConnection.createChannel().then((ch) => {
-    ch.assertQueue(JOBS_QUEUE).then((done) => {
+    ch.assertQueue('', {exclusive: true, autoDelete: true}).then((reply) => {
       const corrId = generateUuid();
-      ch.consume(replyQueue, (msg) => {
+      ch.consume(reply.queue, (msg) => {
         console.log('reply from worker: %s', msg.content);
-        // TODO: emit to single client using rooms
-        // TODO: check correlationId
-        io.sockets.emit('news', { hello: 'world' });
+        if (msg.properties.correlationId == corrId) {
+          // TODO: emit to single client using rooms
+          io.sockets.emit('news', { hello: 'world' });
+          ch.close().then(() => console.log('channel closed'));
+        }
       }, {noAck: true});
 
-      // TODO: do bind for exchange/queue
-      // TODO: use done.queue
-      ch.sendToQueue(
-        JOBS_QUEUE,
-        new Buffer('something to do'), { correlationId: corrId, replyTo: replyQueue },
-        function(err, ok) {
-          if (!err) console.log('NODE:%s: ack callback received', process.env.NODE_ID);
-        }
-      );
-    })
+      const ex = 'jobs';
+      ch.assertExchange(ex, 'direct', {}).then(() => {
+        ch.publish(ex, '', new Buffer('something to do'), { correlationId: corrId, replyTo: reply.queue },
+          function(err, ok) {
+            if (!err) console.log('NODE:%s: ack callback received', process.env.NODE_ID);
+          });
+      });
+      
+      res.status(202).send('Job accepted: ' + corrId);
+    });
   });
-
-  res.status(202).send('Job accepted: ' + Date.now());
 });
 
 app.post('/payments/charge', (req, res) => {

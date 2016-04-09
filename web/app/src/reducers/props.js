@@ -1,9 +1,17 @@
 import * as actions from 'actions';
-import { Map } from 'immutable';
+import { Map, List } from 'immutable';
 
 export const initialState = {
   isBusy: false,
   endorsement: Map(),
+  selectedSlug: '',
+  defaultEndorsements: List([
+    { slug: 'thumb',   action: 'hoiti hommat!' },
+    { slug: 'coffee',  action: 'keitti kahvit!' },
+    { slug: 'dish',    action: 'hoiti tiskit!' },
+    { slug: 'kitchen', action: 'siivos keittiön!' },
+    { slug: 'brause',  action: 'nautti brausen!' }
+  ]),
   users: [
     '@aino.kuokka',
     '@anni',
@@ -57,6 +65,11 @@ export const initialState = {
 
 export function props(state = initialState, action) {
   switch (action.type) {
+    case actions.SELECT_SLUG:
+          return {
+            ...state,
+            selectedSlug: action.slug
+          };
     case actions.CHANGE_FIELD_VALUE:
       return {
         ...state,

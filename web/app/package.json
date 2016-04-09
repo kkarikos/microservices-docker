@@ -51,6 +51,7 @@
     "webpack-dev-server": "^1.14.0"
   },
   "dependencies": {
+    "classnames": "^2.2.3",
     "counterpart": "^0.17.2",
     "history": "^2.0.0",
     "immutable": "^3.7.6",

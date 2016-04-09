@@ -1,0 +1,50 @@
+.button {
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: row;
+  height: 60px;
+  line-height: 60px;
+  color: #333333;
+  font-size: 20px;
+  border-radius: 1px;
+  margin-bottom: 15px;
+  box-sizing: border-box;
+}
+
+:global(.selected) {
+  border-bottom: 3px solid #ff4081;
+}
+
+.thumb:after {
+  content: '\1f44d';
+}
+
+.coffee:after {
+  content: '\2615';
+}
+
+.dish:after {
+  content: '\1f376';
+}
+
+.kitchen:after {
+  content: '\1f374';
+}
+
+.brause:after {
+  content: '\1f379';
+}
+
+.slug {
+  flex-basis: 20%;
+  text-align: center;
+
+  img {
+    vertical-align: middle;
+    height: 30px;
+  }
+}
+
+.action {
+  flex-basis: 80%;
+}

@@ -1,5 +1,6 @@
 import superagent from 'superagent';
 
+export const SELECT_SLUG = 'SELECT_SLUG';
 export const CHANGE_FIELD_VALUE = 'CHANGE_FIELD_VALUE';
 export const ENDORSEMENT_ADD_REQUEST = 'ENDORSEMENT_ADD_REQUEST';
 export const ENDORSEMENT_ADD_SUCCESS = 'ENDORSEMENT_ADD_SUCCESS';
@@ -12,12 +13,20 @@ export function updateValue(field, value) {
   };
 }
 
+export function selectSlug(slug) {
+  return {
+    type: SELECT_SLUG,
+    slug: slug
+  };
+}
+
 export function saveEndorsement() {
   return (dispatch, getState) => {
     const { props } = getState();
     return new Promise((resolve, reject) => {
       // TODO: xhr
       const endorsement = props.endorsement.toJS();
+      debugger;
       dispatch({type: ENDORSEMENT_ADD_SUCCESS});
       resolve();
       /*

@@ -1,7 +1,8 @@
 import { combineReducers } from 'redux';
 import { routeReducer } from 'react-router-redux'
+import { props } from './props';
 
-// TODO: do we need routeReducer?
 export default combineReducers({
-  routing: routeReducer
+  routing: routeReducer,
+  props: props
 });

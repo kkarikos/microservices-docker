@@ -2,6 +2,7 @@
 import React, { PropTypes } from 'react'
 import { Provider } from 'react-redux'
 import { Router } from 'react-router'
+import injectTapEventPlugin from 'react-tap-event-plugin';
 
 export default class Root extends React.Component {
   static propTypes = {
@@ -37,3 +38,5 @@ export default class Root extends React.Component {
     )
   }
 }
+
+injectTapEventPlugin();

@@ -46,20 +46,5 @@
 <script src="<%= htmlWebpackPlugin.options.devServer%>/webpack-dev-server.js"></script>
 <% } %>
 
-<!-- <script src="http://192.168.99.100/socket.io/socket.io.js"></script> -->
-<script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
-
-<script>
-  var options =  {
-            "force new connection" : true,
-            "reconnectionAttempts": "Infinity",
-            "timeout" : 10000,
-            "transports" : ["websocket", "xhr-polling", "jsonp-polling"]
-        }
-  var socket = io.connect('http://192.168.99.100:80', options);
-  socket.on('news', function (data) {
-    console.log('got news: ' + data);
-  });
-</script>
 </body>
 </html>

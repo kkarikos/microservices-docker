@@ -3,29 +3,51 @@ import React from 'react';
 import { Link } from 'react-router';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
-import { executeJob } from '../actions';
+import { updateValue, saveEndorsement } from '../actions';
+import TextField from 'material-ui/lib/text-field';
+import Slider from 'material-ui/lib/slider';
+import RaisedButton from 'material-ui/lib/raised-button';
+import AutoComplete from 'material-ui/lib/auto-complete';
 
 class Main extends React.Component {
-  executeJob = () => {
-    this.props.executeJob();
-  }
   render() {
     const styles = require('./Main.scss');
+    const { endorsement } = this.props;
+
     return (
-      <div id="main">
-        <button onClick={this.executeJob}>executeJob</button>
+      <div className={styles.main} id="main">
+        <AutoComplete
+            onNewRequest={this.props.updateValue.bind(this, 'endorsed')}
+            onUpdateInput={this.props.updateValue.bind(this, 'endorsed')}
+            searchText={endorsement.get('endorsed')}
+            fullWidth={true}
+            hintText="@slack"
+            dataSource={this.props.users}
+        />
+        <AutoComplete
+          onNewRequest={this.props.updateValue.bind(this, 'action')}
+          onUpdateInput={this.props.updateValue.bind(this, 'action')}
+          fullWidth={true}
+          floatingLabelText=""
+          searchText={endorsement.get('action')}
+          hintText="...keitti hyvät kahvit"
+          filter={AutoComplete.caseInsensitiveFilter}
+          dataSource={this.props.fruits}
+        />
+        <RaisedButton onClick={this.props.saveEndorsement} secondary={true} label="Lähetä kehut" />
       </div>
     );
   }
 }
 
 function mapStateToProps(state) {
-  return state;
+  return state.props;
 }
 
 function mapDispatchToProps(dispatch) {
   return bindActionCreators({
-      executeJob
+      updateValue,
+      saveEndorsement
     }, dispatch);
 }
 
